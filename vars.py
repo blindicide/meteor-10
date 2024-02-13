@@ -1,9 +1,0 @@
-OR_key = 'Bearer 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'
-TAI_key = "ac4a75589d91dddb5048e237c2c305689115c9408ef5216dc1d738c6e7288773"
-ygpt1 = 'AQVNxqDDTU-LPyQM2rxamqr4GRGNkK2I1cGsavkG'
-ygpt2 = 'aje6k31kqjsb7si0pmls'
-gpt35 = 'openai/gpt-3.5-turbo-0125'
-llama = 'nousresearch/nous-hermes-llama2-13b'
-mistral = 'teknium/openhermes-2.5-mistral-7b'
-mistralTAI = 'teknium/OpenHermes-2p5-Mistral-7B'
-falconTAI = 'togethercomputer/falcon-40b'

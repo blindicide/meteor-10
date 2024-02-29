@@ -4,11 +4,13 @@ import together
 import json
 import time
 import asyncio
+from openai import OpenAI
 from vars import OR_key, TAI_key, gpt35, llama, mistral, ygpt1, ygpt2
 together.api_key = TAI_key
 folder_id = 'b1gi9uaaq775kkgub8hp'
 yandexgpt_key = ygpt1
 yandex_gpt_api_url = 'https://llm.api.cloud.yandex.net/foundationModels/v1/completion'
+client = OpenAI(base_url="http://localhost:1234/v1", api_key="not-needed")
 
 
 def SendRequestOR(text, model, key):
@@ -28,13 +30,31 @@ def SendRequestOR(text, model, key):
     })
   )
   resp_dict = response.json()
-  rp1 = resp_dict["choices"]
-  rp2 = rp1[0]
-  rp3 = rp2["message"]
-  rp4 = rp3["content"]
-  return rp4
+  #print(resp_dict)
+  if resp_dict['choices']:
+    rp1 = resp_dict["choices"]
+    rp2 = rp1[0]
+    rp3 = rp2["message"]
+    rp4 = rp3["content"]
+    return rp4
+  else:
+    return 'PLACEHOLDER'
 
 
+# Example: reuse your existing OpenAI setup
+
+
+def SendRequestLocal(text):
+  completion = client.chat.completions.create(
+    model="local-model", # this field is currently unused
+    messages=[
+      {"role": "system", "content": "Output the English translation of the following message, nothing more:"},
+      {"role": "user", "content": text}
+    ],
+    temperature=0.7,
+  )
+
+  return completion.choices[0].message
 
 
 def SendRequestYGPT(text):
@@ -65,29 +85,32 @@ def SendRequestYGPT(text):
     )
     resp_dict = response.json()
     print(resp_dict)
-    rp1 = resp_dict["result"]
-    rp2 = rp1['alternatives']
-    rp3 = rp2[0]
-    rp4 = rp3["message"]
-    rp5 = rp4['text']
-    return rp5
+    if "result" in resp_dict:
+      rp1 = resp_dict["result"]
+      rp2 = rp1['alternatives']
+      rp3 = rp2[0]
+      rp4 = rp3["message"]
+      rp5 = rp4['text']
+      return rp5
+    else:
+      return 'PLACEHOLDER'
 
 
 
-# print(SendRequestOR('Бесцветные зелёные идеи яростно спят', 'gryphe/mythomist-7b:free'))
-
-
-def run_translation_OR(model, file, inpt, sleeptime):
+def run_translation_OR(model, file, inpt, lines, sleeptime):
   output = open(file, 'a', encoding='utf-8')
   global OR_key
   totaltime = 0
-  for i in range(len(inpt)):
+  for i in range(lines):
     sentence = inpt[i]
     if len(sentence) > 5:
       time1 = time.time()
       out = SendRequestOR(sentence, model, OR_key)
       output.write(out)
-      output.write('\n')
+      if model != 'teknium/openhermes-2.5-mistral-7b':
+        output.write('\n')
+      else:
+        pass
       output.close()
       output = open(file, 'a', encoding='utf-8')
       time2 = time.time()
@@ -121,6 +144,29 @@ def run_translation_Yandex(file, inpt, sleeptime):
   print('Total time for', len(inpt), 'requests is', totaltime, 'seconds.')
 
 
+def run_translation_local(file, inpt, sleeptime):
+  output = open(file, 'a', encoding='utf-8')
+  global OR_key
+  totaltime = 0
+  for i in range(len(inpt)):
+    sentence = inpt[i]
+    if len(sentence) > 5:
+      time1 = time.time()
+      out = SendRequestLocal(sentence)
+      output.write(out)
+      output.write('\n')
+      output.close()
+      output = open(file, 'a', encoding='utf-8')
+      time2 = time.time()
+      totaltime += (time2 - time1)
+      print('Line No.', i, 'served in', str(time2 - time1), 'seconds.')
+      time.sleep(sleeptime)
+    else:
+      pass
+  print('Total time for', len(inpt), 'requests is', totaltime, 'seconds.')
+  output.close()
+
+
 
 
 file1 = open('test2.txt', 'r', encoding="utf-8")
@@ -134,17 +180,21 @@ f1b = f1a.split('\n')
 # GPT-3.5
 print('GPT-3.5 TESTING...')
 print('---------------')
-run_translation_OR(gpt35, 't1-gpt35.txt', f1b, 0.1)
+run_translation_OR(gpt35, 't1-gpt35.txt', f1b, 100, 1)
 # LLaMa-13B
 print('LLAMA TESTING...')
 print('---------------')
-run_translation_OR(llama, 't1-llama13b.txt', f1b, 0.1)
+run_translation_OR(llama, 't1-llama13b.txt', f1b, 100, 1)
 # Mistral
 print('MISTRAL TESTING...')
 print('---------------')
-run_translation_OR(mistral, 't1-mistral.txt', f1b, 0.1)
+run_translation_OR(mistral, 't1-mistral.txt', f1b, 100, 1)
 print('YGPT TESTING...')
-run_translation_Yandex('t1-ygpt.txt', f1b, 0.1)
+print('---------------')
+#run_translation_Yandex('t1-ygpt.txt', f1b, 1)
+print('Local model testing...')
+print('---------------')
+#run_translation_local('t1-madlad.txt', f1b, 0.1)
 
 
 
